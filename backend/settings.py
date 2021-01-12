@@ -8,7 +8,6 @@ SECRET_KEY = '-ml4+vhcou8l=fg$#a=r+4(wpw44y9^y(rhv!h9y6o$4msw$)*'
 USE_AWS = os.getenv("USE_AWS", "false")
 DEBUG = True
 ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
-REST_AUTH_TOKEN_MODEL = "backend.models.CustomToken"
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -19,7 +18,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework.authtoken',
-    'djoser',
+    'rest_auth',
+    'main'
 ]
 
 MIDDLEWARE = [
@@ -107,10 +107,11 @@ AUTH_PASSWORD_VALIDATORS = [
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.SessionAuthentication', # we're going to remove this
-        'rest_framework.authentication.TokenAuthentication',
-        'rest_framework.authentication.BasicAuthentication',
-    ]
+        'main.auth.InactivityTokenAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
 }
 
 LANGUAGE_CODE = 'en-us'
@@ -126,3 +127,9 @@ USE_TZ = True
 FILE_UPLOAD_MAX_MEMORY_SIZE = 524288000
 
 CORS_ALLOW_ALL_ORIGINS = True
+
+AUTH_USER_MODEL = 'main.User'
+
+REST_AUTH_TOKEN_MODEL = "main.models.CustomToken"
+
+TOKEN_TIMEOUT = 60
