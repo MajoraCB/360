@@ -105,3 +105,24 @@ class AnnotationSeriralizer(serializers.Serializer):
                 annotationPos.save()
 
         return annotation
+
+    def update(self, instance, validated_data):
+        instance.title = validated_data['title']
+        instance.description = validated_data['description']
+
+        if 'photo' in validated_data:
+            instance.photo = validated_data['photo']
+
+        instance.save()
+
+        request = self.context['request']
+
+        if request.POST.get('annotationPoses'):
+            instance.annotationpos_set.all().delete()
+            annotationPoses = json.loads(request.POST.get('annotationPoses'))
+            for annotationPosData in annotationPoses:
+                annotationPos = AnnotationPos(**annotationPosData)
+                annotationPos.annotation = instance
+                annotationPos.save()
+
+        return instance

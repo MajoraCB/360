@@ -39,13 +39,13 @@ class ObjectListCreate(generics.ListCreateAPIView):
 
 
 class AnnotationDetail(generics.RetrieveUpdateDestroyAPIView):
+    lookup_field = 'id'
     serializer_class = AnnotationSeriralizer
     authentication_classes = (InactivityTokenAuthentication, SessionAuthentication)
 
     def get_queryset(self):
-        user = self.request.user
-        objects = Object.objects.filter(organization=user.organization)
-        return objects
+        annotations = Annotation.objects.filter(object__organization=self.request.user.organization)
+        return annotations
 
 
 class AnnotationListCreate(generics.ListCreateAPIView):
@@ -53,11 +53,9 @@ class AnnotationListCreate(generics.ListCreateAPIView):
     authentication_classes = (InactivityTokenAuthentication, SessionAuthentication)
 
     def get_queryset(self):
-        user = self.request.user
-
         if self.request.GET.get('uuid'):
             annotations = Annotation.objects.filter(object__uuid=self.request.GET.get('uuid'))
-            print(annotations)
             return annotations
         else:
-            return []
+            annotations = Annotation.objects.filter(object__organization=self.request.user.organization)
+            return annotations
