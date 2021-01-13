@@ -51,6 +51,8 @@ class Object(models.Model):
     spinviewer = models.BooleanField(default=False)
     spinviewer_nav = models.ImageField(upload_to="uploads/objects/", blank=True, null=True, max_length=500)
     spinviewer_media = models.ImageField(upload_to="uploads/objects/", blank=True, null=True, max_length=500)
+    spinviewer_col_count = models.IntegerField(default=0)
+    spinviewer_row_count = models.IntegerField(default=0)
     panoviewer = models.BooleanField(default=False)
     panoviewer_nav = models.ImageField(upload_to="uploads/objects/", blank=True, null=True, max_length=500)
     panoviewer_media = models.ImageField(upload_to="uploads/objects/", blank=True, null=True, max_length=500)
@@ -59,24 +61,25 @@ class Object(models.Model):
         return "Object %s" + self.uuid
 
 
-class Annnotation(models.Model):
+class Annotation(models.Model):
     title = models.CharField(max_length=100)
-    image = models.ImageField(upload_to="uploads/annnotations/", blank=True, null=True, max_length=500)
+    photo = models.ImageField(upload_to="uploads/annnotations/", blank=True, null=True, max_length=500)
     description = models.TextField(max_length=500)
-    annotation = models.ForeignKey(Object, on_delete=models.CASCADE, null=False)
+    object = models.ForeignKey(Object, on_delete=models.CASCADE, null=False)
 
     def __str__(self):
         return str(self.title)
 
 
-class AnnnotationPos(models.Model):
-    annotation = models.ForeignKey(Annnotation, on_delete=models.CASCADE, null=False)
+class AnnotationPos(models.Model):
+    annotation = models.ForeignKey(Annotation, on_delete=models.CASCADE, null=False)
+    frame_index = models.IntegerField(default=0)
     position_x = models.PositiveIntegerField(validators=[MaxValueValidator(100), MinValueValidator(1)])
     position_y = models.PositiveIntegerField(validators=[MaxValueValidator(100), MinValueValidator(1)])
 
     class Meta:
         verbose_name = "AnnotationPos"
-        verbose_name_plural = "AnnotationPos"
+        verbose_name_plural = "AnnotationPoses"
 
     def __str__(self):
         return str('Annotation Pos ' + str(self.id) + ' X:' + str(self.position_x) + ' Y:' + str(self.position_y))

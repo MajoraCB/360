@@ -64,4 +64,4 @@ def generate_sprite_image(request_files):
     master.save(output, format='jpeg' if image_extension == 'JPEG' else 'png', quality=100)
     output.seek(0)
 
-    return ImageFile(output, str(uuid.uuid4()) + '.jpeg' if image_extension else '.png')
+    return ImageFile(output, str(uuid.uuid4()) + '.jpeg' if image_extension else '.png'), col_count, row_count
