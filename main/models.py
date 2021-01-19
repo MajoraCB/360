@@ -58,15 +58,20 @@ class Object(models.Model):
     panoviewer_media = models.ImageField(upload_to="uploads/objects/", blank=True, null=True, max_length=500)
 
     def __str__(self):
-        return "Object %s" + self.uuid
+        return "Object %s" % self.uuid
 
 
-class Annotation(models.Model):
+class CommonAnnotation(models.Model):
     title = models.CharField(max_length=100)
     photo = models.ImageField(upload_to="uploads/annnotations/", blank=True, null=True, max_length=500)
-    description = models.TextField(max_length=500)
+    description = models.TextField(max_length=500, default="")
     object = models.ForeignKey(Object, on_delete=models.CASCADE, null=False)
 
+    class Meta:
+        abstract = True
+
+
+class Annotation(CommonAnnotation, models.Model):
     def __str__(self):
         return str(self.title)
 
@@ -74,8 +79,12 @@ class Annotation(models.Model):
 class AnnotationPos(models.Model):
     annotation = models.ForeignKey(Annotation, on_delete=models.CASCADE, null=False)
     frame_index = models.IntegerField(default=0)
-    position_x = models.PositiveIntegerField(validators=[MaxValueValidator(100), MinValueValidator(1)])
-    position_y = models.PositiveIntegerField(validators=[MaxValueValidator(100), MinValueValidator(1)])
+    position_x = models.DecimalField(default=0,
+                                     validators=[MinValueValidator(0), MaxValueValidator(100)], max_digits=6,
+                                     decimal_places=3)
+    position_y = models.DecimalField(default=0,
+                                     validators=[MinValueValidator(0), MaxValueValidator(100)], max_digits=6,
+                                     decimal_places=3)
 
     class Meta:
         verbose_name = "AnnotationPos"
@@ -83,3 +92,11 @@ class AnnotationPos(models.Model):
 
     def __str__(self):
         return str('Annotation Pos ' + str(self.id) + ' X:' + str(self.position_x) + ' Y:' + str(self.position_y))
+
+
+class PanoAnnotation(CommonAnnotation, models.Model):
+    yaw = models.DecimalField(default=0, max_digits=6, decimal_places=3)
+    pitch = models.DecimalField(default=0, max_digits=6, decimal_places=3)
+
+    def __str__(self):
+        return str(self.title)

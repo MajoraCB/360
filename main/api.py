@@ -34,7 +34,8 @@ class ObjectListCreate(generics.ListCreateAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        objects = Object.objects.filter(organization=user.organization)
+        objects = Object.objects.filter(organization=user.organization.order_by(
+                'uuid'))
         return objects
 
 
@@ -44,7 +45,8 @@ class AnnotationDetail(generics.RetrieveUpdateDestroyAPIView):
     authentication_classes = (InactivityTokenAuthentication, SessionAuthentication)
 
     def get_queryset(self):
-        annotations = Annotation.objects.filter(object__organization=self.request.user.organization)
+        annotations = Annotation.objects.filter(object__organization=self.request.user.organization).order_by(
+                'title')
         return annotations
 
 
@@ -54,8 +56,36 @@ class AnnotationListCreate(generics.ListCreateAPIView):
 
     def get_queryset(self):
         if self.request.GET.get('uuid'):
-            annotations = Annotation.objects.filter(object__uuid=self.request.GET.get('uuid'))
+            annotations = Annotation.objects.filter(object__uuid=self.request.GET.get('uuid')).order_by(
+                'title')
             return annotations
         else:
-            annotations = Annotation.objects.filter(object__organization=self.request.user.organization)
+            annotations = Annotation.objects.filter(object__organization=self.request.user.organization).order_by(
+                'title')
+            return annotations
+
+
+class PanoAnnotationDetail(generics.RetrieveUpdateDestroyAPIView):
+    lookup_field = 'id'
+    serializer_class = PanoAnnotationSeriralizer
+    authentication_classes = (InactivityTokenAuthentication, SessionAuthentication)
+
+    def get_queryset(self):
+        annotations = PanoAnnotation.objects.filter(object__organization=self.request.user.organization).order_by(
+            'title')
+        return annotations
+
+
+class PanoAnnotationListCreate(generics.ListCreateAPIView):
+    serializer_class = PanoAnnotationSeriralizer
+    authentication_classes = (InactivityTokenAuthentication, SessionAuthentication)
+
+    def get_queryset(self):
+        if self.request.GET.get('uuid'):
+            annotations = PanoAnnotation.objects.filter(object__uuid=self.request.GET.get('uuid')).order_by(
+                'title')
+            return annotations
+        else:
+            annotations = PanoAnnotation.objects.filter(object__organization=self.request.user.organization).order_by(
+                'title')
             return annotations

@@ -58,8 +58,8 @@ class ObjectSerializer(serializers.Serializer):
         if validated_data['panoviewer']:
             panoviewer_photo = request.FILES.getlist('panoviewer_photo')
             if len(panoviewer_photo) > 0:
-                # o.panoviewer_media = panoviewer_photo[0]
-                o.panoviewer_nav = panoviewer_photo[0]
+                o.panoviewer_media = panoviewer_photo[0]
+                # o.panoviewer_nav = panoviewer_photo[0]
             else:
                 raise serializers.ValidationError('{"error": "Missing required panoviewer image" }')
 
@@ -73,8 +73,8 @@ class ObjectSerializer(serializers.Serializer):
 
 class AnnotationPosSeriralizer(serializers.Serializer):
     frame_index = serializers.IntegerField(default=0)
-    position_x = serializers.IntegerField(default=0)
-    position_y = serializers.IntegerField(default=0)
+    position_x = serializers.FloatField(default=0)
+    position_y = serializers.FloatField(default=0)
 
 
 class AnnotationSeriralizer(serializers.Serializer):
@@ -124,5 +124,43 @@ class AnnotationSeriralizer(serializers.Serializer):
                 annotationPos = AnnotationPos(**annotationPosData)
                 annotationPos.annotation = instance
                 annotationPos.save()
+
+        return instance
+
+
+
+class PanoAnnotationSeriralizer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    title = serializers.CharField(max_length=100, required=True)
+    photo = serializers.ImageField(required=True)
+    description = serializers.CharField(max_length=500, required=True)
+    object = ObjectSerializer(required=False)
+    yaw = serializers.FloatField(default=0)
+    pitch = serializers.FloatField(default=0)
+
+    def create(self, validated_data):
+        request = self.context['request']
+
+        if request.POST.get('object'):
+            object = Object.objects.get(pk=request.POST.get('object'))
+        else:
+            raise serializers.ValidationError('{"error": "Missing required object" }')
+
+        annotation = PanoAnnotation(**validated_data)
+        annotation.object = object
+        annotation.save()
+
+        return annotation
+
+    def update(self, instance, validated_data):
+        instance.title = validated_data['title']
+        instance.description = validated_data['description']
+        instance.yaw = validated_data['yaw']
+        instance.pitch = validated_data['pitch']
+
+        if 'photo' in validated_data:
+            instance.photo = validated_data['photo']
+
+        instance.save()
 
         return instance
