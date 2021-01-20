@@ -7,6 +7,28 @@ from django.core.files.images import ImageFile
 MAX_IMAGE_WIDTH = 1500
 MAX_IMAGE_HEIGHT = 750
 
+MAX_NAV_IMAGE_WIDTH = 700
+MAX_NAV_IMAGE_HEIGHT = 375
+
+
+def generate_sprite_nav_image(request_file):
+    img = Image.open(request_file)
+    image_width, image_height = img.size
+    image_extension = img.format
+
+    scale_ratio = min(MAX_NAV_IMAGE_WIDTH / image_width, MAX_NAV_IMAGE_HEIGHT / image_height)
+
+    scaled_image_width = int(image_width * scale_ratio)
+    scaled_image_height = int(image_height * scale_ratio)
+    scaled_img = img.resize((scaled_image_width, scaled_image_height), Image.ANTIALIAS)
+    print("Scaling nav image by %d X %d" % (scaled_image_width, scaled_image_height))
+
+    output = io.BytesIO()
+    scaled_img.save(output, format='jpeg' if image_extension == 'JPEG' else 'png', quality=100)
+    output.seek(0)
+
+    return ImageFile(output, str(uuid.uuid4()) + '.jpeg' if image_extension else '.png')
+
 
 def generate_sprite_image(request_files):
     original_images = [Image.open(image_file) for image_file in request_files]
@@ -65,3 +87,27 @@ def generate_sprite_image(request_files):
     output.seek(0)
 
     return ImageFile(output, str(uuid.uuid4()) + '.jpeg' if image_extension else '.png'), col_count, row_count
+
+
+def generate_panoviewer_nav_image(request_file):
+    import py360convert
+    import numpy as np
+    img = Image.open(request_file)
+    img_array = np.array(img)
+
+    image_width, image_height = img.size
+    image_extension = img.format
+
+    scale_ratio = min(MAX_NAV_IMAGE_WIDTH / image_width, MAX_NAV_IMAGE_HEIGHT / image_height)
+
+    scaled_image_width = int(image_width * scale_ratio)
+    scaled_image_height = int(image_height * scale_ratio)
+
+    output_convert = py360convert.e2p(img_array, (75, 75), 0, 0, (scaled_image_height, scaled_image_width))
+    output_img = Image.fromarray(output_convert)
+
+    output = io.BytesIO()
+    output_img.save(output, format='jpeg' if image_extension == 'JPEG' else 'png', quality=100)
+    output.seek(0)
+
+    return ImageFile(output, str(uuid.uuid4()) + '.jpeg' if image_extension else '.png')

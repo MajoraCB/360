@@ -34,8 +34,8 @@ class ObjectListCreate(generics.ListCreateAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        objects = Object.objects.filter(organization=user.organization.order_by(
-                'uuid'))
+        objects = Object.objects.filter(organization=user.organization).order_by(
+            'uuid')
         return objects
 
 
@@ -46,7 +46,7 @@ class AnnotationDetail(generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         annotations = Annotation.objects.filter(object__organization=self.request.user.organization).order_by(
-                'title')
+            'title')
         return annotations
 
 

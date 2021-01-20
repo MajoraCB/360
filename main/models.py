@@ -46,7 +46,7 @@ class User(AbstractUser):
 
 
 class Object(models.Model):
-    uuid = models.CharField(max_length=20, unique=True)
+    uuid = models.CharField(max_length=50, unique=True)
     organization = models.ForeignKey(Organization, on_delete=models.SET_NULL, blank=True, null=True)
     spinviewer = models.BooleanField(default=False)
     spinviewer_nav = models.ImageField(upload_to="uploads/objects/", blank=True, null=True, max_length=500)

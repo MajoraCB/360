@@ -47,7 +47,7 @@ class ObjectSerializer(serializers.Serializer):
         if validated_data['spinviewer']:
             spinviewer_photos = request.FILES.getlist('spinviewer_photos')
             if spinviewer_photos and len(spinviewer_photos) > 0:
-                o.spinviewer_nav = spinviewer_photos[0]
+                o.spinviewer_nav = generate_sprite_nav_image(spinviewer_photos[0])
                 sprite_data = generate_sprite_image(spinviewer_photos)
                 o.spinviewer_media = sprite_data[0]
                 o.spinviewer_col_count = sprite_data[1]
@@ -59,7 +59,7 @@ class ObjectSerializer(serializers.Serializer):
             panoviewer_photo = request.FILES.getlist('panoviewer_photo')
             if len(panoviewer_photo) > 0:
                 o.panoviewer_media = panoviewer_photo[0]
-                # o.panoviewer_nav = panoviewer_photo[0]
+                o.panoviewer_nav = generate_panoviewer_nav_image(panoviewer_photo[0])
             else:
                 raise serializers.ValidationError('{"error": "Missing required panoviewer image" }')
 
