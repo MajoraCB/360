@@ -1,5 +1,4 @@
 from rest_framework import generics
-from .models import *
 from .serializers import *
 from rest_framework.authentication import SessionAuthentication
 from .auth import InactivityTokenAuthentication
