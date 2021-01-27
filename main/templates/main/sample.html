@@ -34,11 +34,12 @@
             <div class="inner">
                 <header class="major"><h1>Annotation Service Sample</h1></header>
                 <div class="row">
-                    <div class="col-md-6">
-                        <iframe src="{% url 'view_object' "123123123asdbcsdfsdfsdf"  "888888888888888234234" %}" width="100%"
-                                height="100%"></iframe>
+                    <div class="col-md-7">
+                        <iframe src="{% url 'view_object' "123123123asdbcsdfsdfsdf"  "888888888888888234234" %}"
+                                width="100%"
+                                height="100%" id="view-frame"></iframe>
                     </div>
-                    <div class=" col-md-6">
+                    <div class=" col-md-5">
                         <div class="row">
                             <div class="col-md-4 col-xs-6"><img
                                     src="{% static 'main/sample/images/product-1-720x480.jpg' %}" class="img-responsive"
@@ -151,5 +152,6 @@
 <script src="{% static 'main/sample/js/breakpoints.min.js' %}"></script>
 <script src="{% static 'main/sample/js/util.js' %}"></script>
 <script src="{% static 'main/sample/js/main.js' %}"></script>
+<script src="{% static 'main/sample/js/plugin.js' %}"></script>
 </body>
 </html>

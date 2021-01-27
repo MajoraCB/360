@@ -9,6 +9,19 @@
     <script src="{% static 'main/view/js/jquery-2.2.4.js' %}"></script>
     <script src="{% static 'main/view/js/view360.pkgd.js' %}"></script>
     <style>
+        html {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        body {
+            width: 95%;
+            height: 95%;
+        }
+
         #spinviewer {
             position: relative;
             margin: 0 auto;
@@ -27,199 +40,141 @@
             border-radius: 50%;
         }
 
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            padding-top: 100px;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-        }
-
-        .modal-content {
-            background-color: #fefefe;
-            margin: auto;
-            padding: 10px;
-            border: 1px solid #888;
-            width: 40%;
-        }
-
-        .close {
-            color: #aaaaaa;
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-        }
-
-        .close:hover,
-        .close:focus {
-            color: #000;
-            text-decoration: none;
-            cursor: pointer;
-        }
-
         .switch-view-btn {
             position: fixed;
             left: 5%;
             top: 5%;
             font-size: 15px;
             z-index: 1;
+            background-position: center;
+            background-size: cover;
+            background-repeat: no-repeat;
+            width: 10vw;
+            height: 10vw;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 0.5vw solid white;
         }
     </style>
 </head>
 <body>
 <div class="viewer">
     {% if object.panoviewer %}
-        <button class="switch-view-btn"
-                onclick="window.location='{% url 'view_panoviewer' object.organization.api_key object.uuid %}'">
-            Paonviewer
-        </button>
+        <div class="switch-view-btn" style="background-image: url({% get_media_prefix %}{{ object.panoviewer_nav }})"
+             onclick="window.location='{% url 'view_panoviewer' object.organization.api_key object.uuid %}'">
+        </div>
     {% endif %}
     <div id="spinviewer"></div>
-    <div id="annotation-modal" class="modal">
-        <div class="modal-content">
-            <span class="close annotation-modal-close">&times;</span>
-            <h4 class="annotation-title"
-                style="text-align: center;padding: 2px;margin-top:5px;margin-bottom: 10px;"></h4>
-            <img class="annotation-image" style="width: 100%;max-height: 12vmax;">
-            <h6 class="annotation-description"
-                style="font-size: 15px;padding: 4px;text-align: center;margin-top:5px;margin-bottom: 5px;"></h6>
-        </div>
-    </div>
 </div>
 <script>
-    let annotations =  {{ annotations|safe }};
-
-    annotations.map(annotation => {
-        annotation.annotationPos = convertAnnoationPosArrayToObject(annotation.annotationPoses);
-    })
-
-    let curFrameIndex = 0;
-    const spinViewer = new eg.view360.SpinViewer(
-        document.getElementById('spinviewer'),
-        {
-            imageUrl: "{%  get_media_prefix %}{{ object.spinviewer_media }}",
-            colCount: {{ object.spinviewer_col_count|safe }},
-            rowCount: {{ object.spinviewer_row_count|safe }},
-            scale: 1,
-        }
-    );
-
-    const spinViewerWrapper = $(document.getElementById('spinviewer'));
-
-    spinViewer.on('load', () => {
-        showSpinViewByFrameIndex(0);
-    });
-
-    spinViewer.on('change', (e) => {
-        curFrameIndex = e.frameIndex;
-        renderAnnotations();
-    });
-
-    function convertAnnoationPosArrayToObject(annotationPoses) {
-        let result = {};
-
-        for (const i in annotationPoses) {
-            const annotationPos = annotationPoses[i];
-            result[annotationPos['frame_index']] = annotationPos;
-        }
-
-        return result;
-    }
-
-    function showSpinViewByFrameIndex(index) {
-        curFrameIndex = index;
-        spinViewer._sprites.setFrameIndex(index);
-        renderAnnotations();
-    }
-
-    function renderAnnotations() {
-        $('.annotation-pos').remove();
+    $(function () {
+        let annotations =  {{ annotations|safe }};
+        let isComReady = false;
 
         annotations.map(annotation => {
-            const annotationPos = annotation.annotationPos[curFrameIndex];
+            annotation.annotationPos = convertAnnoationPosArrayToObject(annotation.annotationPoses);
+        })
 
-            if (annotationPos) {
-                const left =
-                    (annotationPos.position_x * spinViewerWrapper.width()) / 100;
-                const top =
-                    (annotationPos.position_y * spinViewerWrapper.height()) / 100;
+        let curFrameIndex = 0;
 
-                $(spinViewerWrapper).append(
-                    `<div class="annotation-pos" data-annotation-id="${annotation.id}" style="left:${left}px;top: ${top}px;"><div class="annotation-pos-icon" data-annotation-id="${annotation.id}"/></div>`
-                );
+        var width = document.body.clientWidth;
+        var height = document.body.clientHeight;
+
+        const spinViewer = new eg.view360.SpinViewer(
+            document.getElementById('spinviewer'),
+            {
+                imageUrl: "{%  get_media_prefix %}{{ object.spinviewer_media }}",
+                colCount: {{ object.spinviewer_col_count|safe }},
+                rowCount: {{ object.spinviewer_row_count|safe }},
+                scale: 1,
+                width: width,
+                height: height
+            }
+        );
+
+        const spinViewerWrapper = $(document.getElementById('spinviewer'));
+
+        spinViewer.on('load', () => {
+            showSpinViewByFrameIndex(0);
+        });
+
+        spinViewer.on('change', (e) => {
+            curFrameIndex = e.frameIndex;
+            renderAnnotations();
+        });
+
+        function convertAnnoationPosArrayToObject(annotationPoses) {
+            let result = {};
+
+            for (const i in annotationPoses) {
+                const annotationPos = annotationPoses[i];
+                result[annotationPos['frame_index']] = annotationPos;
             }
 
-        });
+            return result;
+        }
 
-        const annotationBtns = $('.annotation-pos');
+        function showSpinViewByFrameIndex(index) {
+            curFrameIndex = index;
+            spinViewer._sprites.setFrameIndex(index);
+            renderAnnotations();
+        }
 
-        window.addEventListener(
-            'click',
-            function (event) {
-                var isAnnotationModal = jQuery('#annotation-modal').length > 0;
-                if (
-                    isAnnotationModal &&
-                    ($(event.target).hasClass('annotation-modal-open') ||
-                        $(event.target).hasClass('annotation-modal-header') ||
-                        $(event.target).hasClass('annotation-modal-close'))
-                ) {
-                    event.stopPropagation();
+        function renderAnnotations() {
+            $('.annotation-pos').remove();
+
+            annotations.map(annotation => {
+                const annotationPos = annotation.annotationPos[curFrameIndex];
+
+                if (annotationPos) {
+                    const left =
+                        (annotationPos.position_x * spinViewerWrapper.width()) / 100;
+                    const top =
+                        (annotationPos.position_y * spinViewerWrapper.height()) / 100;
+
+                    $(spinViewerWrapper).append(
+                        `<div class="annotation-pos" data-annotation-id="${annotation.id}" style="left:${left}px;top: ${top}px;"><div class="annotation-pos-icon" data-annotation-id="${annotation.id}"/></div>`
+                    );
                 }
 
-                if ($(event.target).hasClass('annotation-modal-close')) {
-                    $(document.body).removeClass('annotation-modal-open');
-                    $(`#annotation-modal`).css('display', 'none');
+            });
+
+            const annotationBtns = $('.annotation-pos');
+
+            annotationBtns.on('mousedown', function (e) {
+                const annotationId = $(e.target).data('annotation-id');
+                showAnnotation(annotationId);
+            });
+        }
+
+        function showAnnotation(annotationId) {
+            const annotation = annotations.find(
+                (a) => a.id == annotationId
+            );
+
+            if (isComReady) {
+                sendMessage({type: 'annotation', data: annotation});
+            }
+        }
+
+        if (window.parent && window.parent !== window) {
+            sendMessage({type: 'ready'});
+
+            window.addEventListener('message', (e) => {
+                const data = e.data;
+
+                if (data.type === 'ready') {
+                    isComReady = true;
                 }
-            },
-            true
-        );
+            })
+        }
 
-        annotationBtns.on('mousedown', function (e) {
-            e.preventDefault();
-            e.stopPropagation();
-            const annotationId = $(e.target).data('annotation-id');
-            showAnnotation(annotationId);
-        });
-
-        annotationBtns.on('mouseup', function (e) {
-            e.preventDefault();
-            e.stopPropagation();
-        });
-
-        annotationBtns.on('mousedown', function (e) {
-            e.preventDefault();
-            e.stopPropagation();
-            const annotationId = $(e.target).data('annotation-id');
-            showAnnotation(annotationId);
-        });
-    }
-
-    function showAnnotation(annotationId) {
-        const annotation = annotations.find(
-            (a) => a.id == annotationId
-        );
-
-        $('.annotation-title').text(
-            annotation['title']
-        );
-
-        $('.annotation-image').attr(
-            'src',
-            annotation['photo']
-        );
-
-        $('.annotation-description').text(
-            annotation['description']
-        );
-
-        $(document.body).addClass('annotation-modal-open');
-
-        $(`#annotation-modal`).css('display', 'block');
-    }
+        function sendMessage(e) {
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage(e, '*');
+            }
+        }
+    })
 </script>
 </body>
 </html>

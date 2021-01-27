@@ -12,6 +12,19 @@
     <script src="{% static 'main/view/js/PieView.js' %}"></script>
     <script src="{% static 'main/view/js/PanoControls.js' %}"></script>
     <style>
+        html {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        body {
+            width: 95%;
+            height: 95%;
+        }
+
         .annotation-pos {
             cursor: pointer;
             position: absolute;
@@ -24,226 +37,150 @@
             border-radius: 50%;
         }
 
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            padding-top: 100px;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-        }
-
-        .modal-content {
-            background-color: #fefefe;
-            margin: auto;
-            padding: 10px;
-            border: 1px solid #888;
-            width: 40%;
-        }
-
-        .close {
-            color: #aaaaaa;
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-        }
-
-        .close:hover,
-        .close:focus {
-            color: #000;
-            text-decoration: none;
-            cursor: pointer;
-        }
-
         .switch-view-btn {
             position: fixed;
             left: 5%;
             top: 5%;
             font-size: 15px;
             z-index: 1;
+            background-position: center;
+            background-size: cover;
+            background-repeat: no-repeat;
+            width: 10vw;
+            height: 10vw;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 0.5vw solid white;
         }
     </style>
 </head>
 <body>
 <div class="viewer">
     {% if object.spinviewer %}
-        <button class="switch-view-btn"
-                onclick="window.location='{% url 'view_spinviewer' object.organization.api_key object.uuid %}'">
-            Spinviewer
-        </button>
+        <div class="switch-view-btn" style="background-image: url({% get_media_prefix %}{{ object.spinviewer_nav }})"
+             onclick="window.location='{% url 'view_spinviewer' object.organization.api_key object.uuid %}'">
+        </div>
     {% endif %}
     <div class="container"></div>
-    <div id="annotation-modal" class="modal">
-        <div class="modal-content">
-            <span class="close annotation-modal-close">&times;</span>
-            <h4 class="annotation-title"
-                style="text-align: center;padding: 2px;margin-top:5px;margin-bottom: 10px;"></h4>
-            <img class="annotation-image" style="width: 100%;max-height: 12vmax;">
-            <h6 class="annotation-description"
-                style="font-size: 15px;padding: 4px;text-align: center;margin-top:5px;margin-bottom: 5px;"></h6>
-        </div>
-    </div>
 </div>
 </body>
 <script>
-    var panoviewer = document.querySelector('.viewer');
-    var container = document.querySelector('.viewer .container');
-    var annotations = {{ annotations|safe }};
-    var media_prefix = "{%  get_media_prefix %}";
+    $(function () {
+        let isComReady = false;
+        var panoviewer = document.querySelector('.viewer');
+        var container = document.querySelector('.viewer .container');
+        var annotations = {{ annotations|safe }};
 
-    function toRadian(deg) {
-        return (deg * Math.PI) / 180;
-    }
+        function toRadian(deg) {
+            return (deg * Math.PI) / 180;
+        }
 
-    function toAngle(rad) {
-        return (rad * 180) / Math.PI;
-    }
+        function getHFov(fov) {
+            var rect = container.getBoundingClientRect();
+            var width = rect.width;
+            var height = rect.height;
+            return ((Math.atan((width / height) * Math.tan(toRadian(fov) / 2)) / Math.PI) * 360);
+        }
 
-    function getHFov(fov) {
-        var rect = container.getBoundingClientRect();
-        var width = rect.width;
-        var height = rect.height;
-        return ((Math.atan((width / height) * Math.tan(toRadian(fov) / 2)) / Math.PI) * 360);
-    }
-
-    function rotate(point, deg) {
-        var rad = toRadian(deg);
-        var cos = Math.cos(rad);
-        var sin = Math.sin(rad);
-        return [cos * point[0] - sin * point[1], sin * point[0] + cos * point[1]];
-    }
-
-    var viewer = new eg.view360.PanoViewer(container, {
-        image: "{%  get_media_prefix %}{{ object.panoviewer_media }}",
-        useZoom: false,
-        projectionType: eg.view360.PanoViewer.PROJECTION_TYPE.EQUIRECTANGULAR,
-        cubemapConfig: {tileConfig: {flipHorizontal: true, rotation: 0},},
-    }).on('ready', function (e) {
-        viewer.lookAt({fov: 80,});
-        setTimeout(function () {
-            viewer.lookAt({fov: 65,}, 500);
+        var viewer = new eg.view360.PanoViewer(container, {
+            image: "{%  get_media_prefix %}{{ object.panoviewer_media }}",
+            useZoom: false,
+            projectionType: eg.view360.PanoViewer.PROJECTION_TYPE.EQUIRECTANGULAR,
+            cubemapConfig: {tileConfig: {flipHorizontal: true, rotation: 0},},
+        }).on('ready', function (e) {
+            viewer.lookAt({fov: 80,});
+            setTimeout(function () {
+                viewer.lookAt({fov: 65,}, 500);
+                renderAnnotations();
+            });
+        }).on('viewChange', function (e) {
             renderAnnotations();
+        }).on('error', (e) => {
+            console.error(e);
         });
-    }).on('viewChange', function (e) {
-        renderAnnotations();
-    }).on('error', (e) => {
-        console.error(e);
-    });
 
-    window.addEventListener('resize', function (e) {
-        viewer.updateViewportDimensions();
-    });
+        window.addEventListener('resize', function (e) {
+            viewer.updateViewportDimensions();
+        });
 
-    PanoControls.init(panoviewer, viewer);
-    PanoControls.showLoading();
+        PanoControls.init(panoviewer, viewer);
+        PanoControls.showLoading();
 
-    function renderAnnotations() {
-        $('.annotation-pos').remove();
+        function renderAnnotations() {
+            $('.annotation-pos').remove();
 
-        annotations.map(annotation => {
-            var oyaw = viewer.getYaw();
-            var opitch = viewer.getPitch();
-            var yaw = annotation['yaw'];
-            var pitch = annotation['pitch'];
-            var deltaYaw = yaw - oyaw;
-            var deltaPitch = pitch - opitch;
+            annotations.map(annotation => {
+                var oyaw = viewer.getYaw();
+                var opitch = viewer.getPitch();
+                var yaw = annotation['yaw'];
+                var pitch = annotation['pitch'];
+                var deltaYaw = yaw - oyaw;
+                var deltaPitch = pitch - opitch;
 
-            if (deltaYaw < -180) {
-                deltaYaw += 360;
-            } else if (deltaYaw > 180) {
-                deltaYaw -= 360;
-            }
+                if (deltaYaw < -180) {
+                    deltaYaw += 360;
+                } else if (deltaYaw > 180) {
+                    deltaYaw -= 360;
+                }
 
-            if (Math.abs(deltaYaw) > 90) {
-                return;
-            }
+                if (Math.abs(deltaYaw) > 90) {
+                    return;
+                }
 
-            var radYaw = toRadian(deltaYaw);
-            var radPitch = toRadian(deltaPitch);
+                var radYaw = toRadian(deltaYaw);
+                var radPitch = toRadian(deltaPitch);
 
-            var fov = viewer.getFov();
-            var hfov = getHFov(fov);
+                var fov = viewer.getFov();
+                var hfov = getHFov(fov);
 
-            var rx = Math.tan(toRadian(hfov) / 2);
-            var ry = Math.tan(toRadian(fov) / 2);
+                var rx = Math.tan(toRadian(hfov) / 2);
+                var ry = Math.tan(toRadian(fov) / 2);
 
-            var point = [Math.tan(-radYaw) / rx, Math.tan(-radPitch) / ry];
+                var point = [Math.tan(-radYaw) / rx, Math.tan(-radPitch) / ry];
 
-            var left = viewer._width / 2 + (point[0] * viewer._width) / 2;
-            var top = viewer._height / 2 + (point[1] * viewer._height) / 2;
+                var left = viewer._width / 2 + (point[0] * viewer._width) / 2;
+                var top = viewer._height / 2 + (point[1] * viewer._height) / 2;
 
-            $(panoviewer).append(
-                `<div class="annotation-pos" data-annotation-id="${annotation.id}" style="transform:translate(${left}px, ${top}px)"><div class="annotation-pos-icon" data-annotation-id="${annotation.id}"/></div>`
+                $(panoviewer).append(
+                    `<div class="annotation-pos" data-annotation-id="${annotation.id}" style="transform:translate(${left}px, ${top}px)"><div class="annotation-pos-icon" data-annotation-id="${annotation.id}"/></div>`
+                );
+            });
+
+            const annotationBtns = $('.annotation-pos');
+
+            annotationBtns.on('mousedown', function (e) {
+                const annotationId = $(e.target).data('annotation-id');
+                showAnnotation(annotationId);
+            });
+        }
+
+        function showAnnotation(annotationId) {
+            const annotation = annotations.find(
+                (a) => a.id == annotationId
             );
-        });
 
-        const annotationBtns = $('.annotation-pos');
+            if (isComReady) {
+                sendMessage({type: 'annotation', data: annotation});
+            }
+        }
 
-        window.addEventListener(
-            'click',
-            function (event) {
-                var isAnnotationModal = jQuery('#annotation-modal').length > 0;
-                if (
-                    isAnnotationModal &&
-                    ($(event.target).hasClass('annotation-modal-open') ||
-                        $(event.target).hasClass('annotation-modal-header') ||
-                        $(event.target).hasClass('annotation-modal-close'))
-                ) {
-                    event.stopPropagation();
+        if (window.parent && window.parent !== window) {
+            sendMessage({type: 'ready'});
+
+            window.addEventListener('message', (e) => {
+                const data = e.data;
+
+                if (data.type === 'ready') {
+                    isComReady = true;
                 }
+            })
+        }
 
-                if ($(event.target).hasClass('annotation-modal-close')) {
-                    $(document.body).removeClass('annotation-modal-open');
-                    $(`#annotation-modal`).css('display', 'none');
-                }
-            },
-            true
-        );
-
-        annotationBtns.on('mousedown', function (e) {
-            e.preventDefault();
-            e.stopPropagation();
-            const annotationId = $(e.target).data('annotation-id');
-            showAnnotation(annotationId);
-        });
-
-        annotationBtns.on('mouseup', function (e) {
-            e.preventDefault();
-            e.stopPropagation();
-        });
-
-        annotationBtns.on('mousedown', function (e) {
-            e.preventDefault();
-            e.stopPropagation();
-            const annotationId = $(e.target).data('annotation-id');
-            showAnnotation(annotationId);
-        });
-    }
-
-    function showAnnotation(annotationId) {
-        const annotation = annotations.find(
-            (a) => a.id == annotationId
-        );
-
-        $('.annotation-title').text(
-            annotation['title']
-        );
-
-        $('.annotation-image').attr(
-            'src',
-            annotation['photo']
-        );
-
-        $('.annotation-description').text(
-            annotation['description']
-        );
-
-        $(document.body).addClass('annotation-modal-open');
-
-        $(`#annotation-modal`).css('display', 'block');
-    }
+        function sendMessage(e) {
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage(e, '*');
+            }
+        }
+    })
 </script>
 </html>
